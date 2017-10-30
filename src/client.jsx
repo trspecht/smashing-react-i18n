@@ -9,8 +9,8 @@ const locale = Cookie.get('locale') || 'pt';
 
 // ReactDOM.render(<App />, document.getElementById('react-view'));
 ReactDOM.render(
-    <IntlProvider locale = {locale}>
-        <App />
+    <IntlProvider locale={locale}>
+      <App />
     </IntlProvider>,
     document.getElementById('react-view')
-);
+  );

@@ -11,7 +11,7 @@ import { IntlProvider } from 'react-intl';
 //Setting up Portuguese and English locales as supported
 acceptLanguage.languages = (['pt', 'en']);
 const app = express();
-app.use(cookieParser);
+app.use(cookieParser());
 
 //Fetches a locale value from a cookie; 
 //if none is found, then the HTTP Accept-Language header is processed,
@@ -19,7 +19,7 @@ app.use(cookieParser);
 function detectLocale(req) {
   const cookieLocale = req.cookies.locale;
 
-  return acceptLanguage.get(cookieLocale || req.header['accept-language']) || 'pt';
+  return acceptLanguage.get(cookieLocale || req.headers['accept-language']) || 'pt';
 }
 
 const assetUrl = process.env.NODE_ENV !== 'production' ? 'http://localhost:8050' : '/';
@@ -43,11 +43,11 @@ function renderHTML(componentHTML) {
 
 app.use((req, res) => {
   // const componentHTML = ReactDom.renderToString(<App />);
-  const componentHTML = ReactDom.renderToString(
-    <IntlProvider locale={locale}>
-      <App />
-    </IntlProvider>
-  )
+  const locale = detectLocale(req);
+  const componentHTML = ReactDom.renderToString(  
+  <IntlProvider locale={locale}>
+    <App />
+  </IntlProvider>);
 
   //After the request is processed, we add the HTTP header Set-Cookie for the
   //locale detected in the response. This value will be used for all subsequent requests.
@@ -55,7 +55,7 @@ app.use((req, res) => {
   return res.end(renderHTML(componentHTML));
 });
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
   console.log(`Server listening on: ${PORT}`); // eslint-disable-line no-console
