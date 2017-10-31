@@ -1,30 +1,30 @@
 import express from 'express';
 import React from 'react';
 import ReactDom from 'react-dom/server';
+import acceptLanguage from 'accept-language';
+import cookieParser from 'cookie-parser';
+import { addLocaleData, IntlProvider } from 'react-intl';
+import en from 'react-intl/locale-data/en';
+import pt from 'react-intl/locale-data/pt';
+import fs from 'fs';
+import path from 'path';
 import App from './components/App';
 
-//Importing the accept-language package 
-import cookieParser from 'cookie-parser';
-import acceptLanguage from 'accept-language';
-import { IntlProvider } from 'react-intl';
+addLocaleData([...pt, ...en]);
 
-//Setting up Portuguese and English locales as supported
-acceptLanguage.languages = (['pt', 'en']);
-const app = express();
-app.use(cookieParser());
+const messages = {};
+const localeData = {};
 
-//Fetches a locale value from a cookie; 
-//if none is found, then the HTTP Accept-Language header is processed,
-//or falls back to the default locale 
-function detectLocale(req) {
-  const cookieLocale = req.cookies.locale;
+['en', 'pt'].forEach((locale) => {
+  localeData[locale] = fs.readFileSync(path.join(__dirname, `../node_modules/react-intl/locale-data/${locale}.js`)).toString();
+  messages[locale] = require(`../public/assets/${locale}.json`);
+});
 
-  return acceptLanguage.get(cookieLocale || req.headers['accept-language']) || 'pt';
-}
+acceptLanguage.languages(['en', 'pt']);
 
 const assetUrl = process.env.NODE_ENV !== 'production' ? 'http://localhost:8050' : '/';
 
-function renderHTML(componentHTML) {
+function renderHTML(componentHTML, locale, initialNow) {
   return `
     <!DOCTYPE html>
       <html>
@@ -36,26 +36,37 @@ function renderHTML(componentHTML) {
       <body>
         <div id="react-view">${componentHTML}</div>
         <script type="application/javascript" src="${assetUrl}/public/assets/bundle.js"></script>
+        <script type="application/javascript">${localeData[locale]}</script>
+        <script type="application/javascript">window.INITIAL_NOW=${JSON.stringify(initialNow)}</script>
       </body>
     </html>
   `;
 }
 
-app.use((req, res) => {
-  // const componentHTML = ReactDom.renderToString(<App />);
-  const locale = detectLocale(req);
-  const componentHTML = ReactDom.renderToString(  
-  <IntlProvider locale={locale}>
-    <App />
-  </IntlProvider>);
+const app = express();
+app.use(cookieParser());
+app.use('/public/assets', express.static('public/assets'));
 
-  //After the request is processed, we add the HTTP header Set-Cookie for the
-  //locale detected in the response. This value will be used for all subsequent requests.
+function detectLocale(req) {
+  const cookieLocale = req.cookies.locale;
+
+  return acceptLanguage.get(cookieLocale || req.headers['accept-language']) || 'en';
+}
+
+app.use((req, res) => {
+  const locale = detectLocale(req);
+  const initialNow = Date.now();
+  const componentHTML = ReactDom.renderToString(
+    <IntlProvider initialNow={initialNow} locale={locale} messages={messages[locale]}>
+      <App />
+    </IntlProvider>
+  );
+
   res.cookie('locale', locale, { maxAge: (new Date() * 0.001) + (365 * 24 * 3600) });
-  return res.end(renderHTML(componentHTML));
+  return res.end(renderHTML(componentHTML, locale, initialNow));
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 
 app.listen(PORT, () => {
   console.log(`Server listening on: ${PORT}`); // eslint-disable-line no-console

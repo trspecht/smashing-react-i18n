@@ -4,8 +4,8 @@
   "description": "",
   "main": "dist/bundle.js",
   "scripts": {
+    "build:langs": "./node_modules/.bin/babel scripts/translate.js | node",
     "build": "better-npm-run build",
-    "build:langs": "babel scripts/translate.js | node",
     "webpack-devserver": "webpack-dev-server --debug --hot --devtool eval-source-map --output-pathinfo --watch --colors --inline --content-base public --port 8050 --host 0.0.0.0",
     "nodemon": "better-npm-run nodemon"
   },
@@ -54,6 +54,7 @@
     "bluebird": "^3.4.7",
     "cookie-parser": "^1.4.3",
     "express": "^4.14.0",
+    "isomorphic-fetch": "^2.2.1",
     "js-cookie": "^2.1.4",
     "react": "^15.4.0",
     "react-dom": "^15.4.0",
